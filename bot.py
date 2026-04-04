@@ -2,17 +2,6 @@ import os
 import asyncio
 from pyrogram import Client, filters, idle
 from pypdf import PdfReader
-from flask import Flask
-from threading import Thread
-
-# --- RENDER FAKE WEB SERVER ---
-web_app = Flask(__name__)
-@web_app.route('/')
-def home(): return "Bot is Alive"
-
-def run_web():
-    port = int(os.environ.get("PORT", 8080))
-    web_app.run(host="0.0.0.0", port=port)
 
 # --- CONFIG ---
 API_ID = 38685296
@@ -49,12 +38,15 @@ async def crack(client, message):
     except Exception as e: await status.edit(f"⚠️ Error: {str(e)}")
     if os.path.exists(file_path): os.remove(file_path)
 
-async def start_bot():
-    Thread(target=run_web).start()
+async def main():
+    print("🚀 Starting Bot...")
     await app.start()
     print("✅ Bot is Online!")
     await idle()
+    await app.stop()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_bot())
+    # Render ke loop error ka permanent ilaaj
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(main())
