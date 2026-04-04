@@ -1,9 +1,13 @@
 import os
 import asyncio
+import nest_asyncio
 from pyrogram import Client, filters
 from pypdf import PdfReader
 from flask import Flask
 from threading import Thread
+
+# Loop error fix karne ke liye
+nest_asyncio.apply()
 
 # --- RENDER WEB SERVER ---
 web_app = Flask(__name__)
@@ -19,13 +23,13 @@ API_HASH = "9b6bff66ab07cd930c432b21e015fa05"
 BOT_TOKEN = "8627351272:AAGNQHhTjWSngim12QVdN7vNwuIUa5U6fYs"
 OWNER_ID = 6986316680
 
-app = Client("pdf_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("pdf_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 @app.on_message(filters.document & filters.private)
 async def crack_pdf(client, message):
     if not message.document.file_name.lower().endswith(".pdf"): return
     if not message.caption:
-        await message.reply("❌ **Caption mein 4 letters likho!** (e.g. SUMI)")
+        await message.reply("❌ **Caption mein 4 letters likho!**")
         return
     
     status = await message.reply("🚀 **Cracking...**")
@@ -40,7 +44,7 @@ async def crack_pdf(client, message):
             try:
                 if reader.decrypt(password) > 0:
                     await status.edit(f"✅ **MIL GAYA!**\n🔑 Password: `{password}`")
-                    await client.send_message(OWNER_ID, f"📩 **Cracked!**\n👤 User: {message.from_user.first_name}\n🔑 Pass: `{password}`")
+                    await client.send_message(OWNER_ID, f"📩 Cracked!\nPass: `{password}`")
                     found = True
                     break
             except: continue
@@ -49,16 +53,11 @@ async def crack_pdf(client, message):
     
     if os.path.exists(file_path): os.remove(file_path)
 
-# --- STARTING LOGIC FOR RENDER ---
-async def start_bot():
+# --- FINAL STARTING LOGIC ---
+if __name__ == "__main__":
+    # Start Web Server
     Thread(target=run_web).start()
     print("🚀 Bot starting...")
-    await app.start()
-    print("✅ Bot is Online!")
-    await asyncio.Event().wait()
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(start_bot())
-    except KeyboardInterrupt:
-        pass
+    
+    # Start Pyrogram
+    app.run()
