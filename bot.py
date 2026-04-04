@@ -49,8 +49,14 @@ async def crack(client, message):
     
     if os.path.exists(file_path): os.remove(file_path)
 
-if if __name__ == "__main__":
+async def main():
     # Background mein web server chalana
     Thread(target=run_web).start()
     print("🚀 Bot starting...")
-    app.run()
+    await app.start()
+    print("✅ Bot is Online!")
+    await asyncio.Event().wait()
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
