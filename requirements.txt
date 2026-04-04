@@ -1,3 +1,5 @@
-pyrogram==1.4.16
+pyrogram
 tgcrypto
 pypdf
+flask
+nest_asyncio
