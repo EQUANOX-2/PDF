@@ -1,11 +1,11 @@
 import os
 import asyncio
-from pyrogram import Client, filters
+from pyrogram import Client, filters, idle
 from pypdf import PdfReader
 from flask import Flask
 from threading import Thread
 
-# --- RENDER FAKE SERVER ---
+# --- FAKE WEB SERVER FOR RENDER ---
 web_app = Flask(__name__)
 @web_app.route('/')
 def home(): return "Bot is Online"
@@ -19,7 +19,7 @@ API_HASH = "9b6bff66ab07cd930c432b21e015fa05"
 BOT_TOKEN = "8627351272:AAGNQHhTjWSngim12QVdN7vNwuIUa5U6fYs"
 OWNER_ID = 6986316680
 
-app = Client("my_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("pdf_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 @app.on_message(filters.document & filters.private)
 async def crack_pdf(client, message):
@@ -39,27 +39,36 @@ async def crack_pdf(client, message):
             password = f"{prefix}{year}"
             try:
                 if reader.decrypt(password) > 0:
-                    await status.edit(f"✅ **MIL GAYA!**\n🔑 Password: `{password}`")
-                    await client.send_message(OWNER_ID, f"📩 Cracked!\n🔑 Pass: `{password}`")
+                    await status.edit(f"✅ Found: `{password}`")
+                    await client.send_message(OWNER_ID, f"📩 Cracked!\n🔑 `{password}`")
                     found = True
                     break
             except: continue
-        if not found: await status.edit("❌ Password nahi mila.")
+        if not found: await status.edit("❌ Not Found.")
     except Exception as e: await status.edit(f"⚠️ Error: {str(e)}")
-    
     if os.path.exists(file_path): os.remove(file_path)
 
-# --- THE MAGIC STARTING LOGIC ---
-if __name__ == "__main__":
-    # 1. Start Web Server
+# --- THE FIX: NEW STARTING LOGIC ---
+async def start_everything():
+    # Start Flask Web Server
     Thread(target=run_web).start()
     print("🚀 Web server started...")
-
-    # 2. Start Bot the "Safe" Way
-    print("🚀 Starting Bot...")
-    app.start()
     
-    # 3. Create a manual loop to keep bot alive
-    from pyrogram.methods.utilities.idle import idle
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(idle())
+    # Start Pyrogram Client
+    await app.start()
+    print("✅ Bot is Live on Render!")
+    
+    # Manual Idle (Best for Render)
+    await idle()
+    
+    # Stop Bot
+    await app.stop()
+
+if __name__ == "__main__":
+    # Create and set a new event loop manually
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(start_everything())
+    except KeyboardInterrupt:
+        pass
