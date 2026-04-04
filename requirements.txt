@@ -2,4 +2,3 @@ pyrogram
 tgcrypto
 pypdf
 flask
-nest_asyncio
