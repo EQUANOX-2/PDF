@@ -1,13 +1,9 @@
 import os
 import asyncio
-import nest_asyncio
 from pyrogram import Client, filters, idle
 from pypdf import PdfReader
 from flask import Flask
 from threading import Thread
-
-# --- THE FIX FOR RENDER LOOP ERROR ---
-nest_asyncio.apply()
 
 # --- FAKE WEB SERVER ---
 web_app = Flask(__name__)
@@ -23,10 +19,10 @@ API_HASH = "9b6bff66ab07cd930c432b21e015fa05"
 BOT_TOKEN = "8627351272:AAGNQHhTjWSngim12QVdN7vNwuIUa5U6fYs"
 OWNER_ID = 6986316680
 
-app = Client("pdf_bot_render", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("my_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 @app.on_message(filters.document & filters.private)
-async def crack_pdf(client, message):
+async def crack(client, message):
     if not message.document.file_name.lower().endswith(".pdf"): return
     if not message.caption:
         await message.reply("❌ **Caption mein 4 letters likho!**")
@@ -43,22 +39,36 @@ async def crack_pdf(client, message):
             password = f"{prefix}{year}"
             try:
                 if reader.decrypt(password) > 0:
-                    await status.edit(f"✅ **MIL GAYA!**\n🔑 Pass: `{password}`")
-                    await client.send_message(OWNER_ID, f"📩 Cracked!\n👤 {message.from_user.first_name}\n🔑 `{password}`")
+                    await status.edit(f"✅ Found: `{password}`")
+                    await client.send_message(OWNER_ID, f"📩 Cracked!\n🔑 `{password}`")
                     found = True
                     break
             except: continue
-        if not found: await status.edit("❌ Password nahi mila.")
+        if not found: await status.edit("❌ Not Found.")
     except Exception as e: await status.edit(f"⚠️ Error: {str(e)}")
-    
     if os.path.exists(file_path): os.remove(file_path)
 
-# --- STARTUP ---
-if __name__ == "__main__":
+# --- STARTING LOGIC (RENDER FIX) ---
+async def start_bot():
     # Start Web Server
     Thread(target=run_web).start()
-    print("🚀 Web server started...")
+    print("🚀 Web Server Started...")
     
-    # Start Bot
-    print("🚀 Starting Bot...")
-    app.run()
+    # Start Client
+    await app.start()
+    print("✅ Bot is Online!")
+    
+    # Keep bot alive
+    await idle()
+    
+    # Stop Client
+    await app.stop()
+
+if __name__ == "__main__":
+    # Create and set a new event loop (The Real Fix)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(start_bot())
+    except KeyboardInterrupt:
+        pass
