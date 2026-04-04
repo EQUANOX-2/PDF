@@ -1,17 +1,18 @@
 import os
-import asyncio
-from pyrogram import Client, filters, idle
+from pyrogram import Client, filters
 from pypdf import PdfReader
 from flask import Flask
 from threading import Thread
 
-# --- FAKE WEB SERVER ---
+# --- RENDER FAKE WEB SERVER ---
 web_app = Flask(__name__)
 @web_app.route('/')
 def home(): return "Bot is Alive"
 
 def run_web():
-    web_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    # Render hamesha port 8080 ya environment port mangta hai
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
 
 # --- CONFIG ---
 API_ID = 38685296
@@ -19,17 +20,18 @@ API_HASH = "9b6bff66ab07cd930c432b21e015fa05"
 BOT_TOKEN = "8627351272:AAGNQHhTjWSngim12QVdN7vNwuIUa5U6fYs"
 OWNER_ID = 6986316680
 
-app = Client("my_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Bot initialize (Simple style)
+app = Client("pdf_bot_final", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 @app.on_message(filters.document & filters.private)
-async def crack(client, message):
+def handle_pdf(client, message):
     if not message.document.file_name.lower().endswith(".pdf"): return
     if not message.caption:
-        await message.reply("❌ **Caption mein 4 letters likho!**")
+        message.reply("❌ **Caption mein 4 letters likho!**")
         return
     
-    status = await message.reply("🚀 **Cracking...**")
-    file_path = await message.download()
+    status = message.reply("🚀 **Cracking...**")
+    file_path = message.download()
     prefix = message.caption.strip().upper()
     
     try:
@@ -39,36 +41,22 @@ async def crack(client, message):
             password = f"{prefix}{year}"
             try:
                 if reader.decrypt(password) > 0:
-                    await status.edit(f"✅ Found: `{password}`")
-                    await client.send_message(OWNER_ID, f"📩 Cracked!\n🔑 `{password}`")
+                    status.edit(f"✅ **Found:** `{password}`")
+                    client.send_message(OWNER_ID, f"📩 Cracked!\n🔑 `{password}`")
                     found = True
                     break
             except: continue
-        if not found: await status.edit("❌ Not Found.")
-    except Exception as e: await status.edit(f"⚠️ Error: {str(e)}")
+        if not found: status.edit("❌ Not Found.")
+    except Exception as e:
+        status.edit(f"⚠️ Error: {str(e)}")
+    
     if os.path.exists(file_path): os.remove(file_path)
 
-# --- STARTING LOGIC (RENDER FIX) ---
-async def start_bot():
-    # Start Web Server
-    Thread(target=run_web).start()
-    print("🚀 Web Server Started...")
-    
-    # Start Client
-    await app.start()
-    print("✅ Bot is Online!")
-    
-    # Keep bot alive
-    await idle()
-    
-    # Stop Client
-    await app.stop()
-
 if __name__ == "__main__":
-    # Create and set a new event loop (The Real Fix)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(start_bot())
-    except KeyboardInterrupt:
-        pass
+    # 1. Start Web Server in background
+    Thread(target=run_web).start()
+    print("🚀 Web server started...")
+    
+    # 2. Start Bot in Main Thread (No asyncio manual loop)
+    print("🚀 Bot starting...")
+    app.run()
